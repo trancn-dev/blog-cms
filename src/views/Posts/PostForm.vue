@@ -86,21 +86,6 @@
 
                     <v-divider class="my-4"></v-divider>
 
-                    <v-text-field
-                      v-model="form.meta_title"
-                      label="Meta Title"
-                      hint="SEO title (60 chars)"
-                      counter="60"
-                    />
-
-                    <v-textarea
-                      v-model="form.meta_description"
-                      label="Meta Description"
-                      hint="SEO description (160 chars)"
-                      counter="160"
-                      rows="3"
-                    />
-
                     <!-- SEO Meta Expansion Panel -->
                     <v-expansion-panels class="mt-4">
                       <v-expansion-panel>

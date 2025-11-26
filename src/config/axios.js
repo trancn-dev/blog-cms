@@ -1,67 +1,62 @@
-import axios from 'axios'
+import axios from "axios";
+import { toast } from "vue3-toastify";
 
 // Create axios instance
 const apiClient = axios.create({
-  baseURL: (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000') + '/api',
+  baseURL:
+    (import.meta.env.VITE_API_BASE_URL || "http://localhost:8000") +
+    (import.meta.env.VITE_API_PREFIX || "/api/v1/admin"),
   timeout: import.meta.env.VITE_API_TIMEOUT || 30000,
   headers: {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json',
-  }
-})
+    "Content-Type": "application/json",
+    Accept: "application/json",
+  },
+});
 
 // Request interceptor
 apiClient.interceptors.request.use(
   (config) => {
-    // Get token from localStorage
-    const token = localStorage.getItem('token')
+    const token = localStorage.getItem("token");
     if (token) {
-      config.headers.Authorization = `Bearer ${token}`
+      config.headers.Authorization = `Bearer ${token}`;
     }
-    return config
+    return config;
   },
-  (error) => {
-    return Promise.reject(error)
-  }
-)
+  (error) => Promise.reject(error)
+);
 
-// Response interceptor
+// Helper function to get error message
+const getErrorMessage = (error) => {
+  if (error.response?.data?.message) {
+    return error.response.data.message;
+  }
+  if (error.response?.data?.errors) {
+    const errors = error.response.data.errors;
+    const firstKey = Object.keys(errors)[0];
+    return Array.isArray(errors[firstKey])
+      ? errors[firstKey][0]
+      : errors[firstKey];
+  }
+  return error.message || "An error occurred";
+};
+
+// Response interceptor - only handle errors, no auto success toast
 apiClient.interceptors.response.use(
-  (response) => {
-    return response.data
-  },
+  (response) => response.data,
   (error) => {
-    // Handle errors
-    if (error.response) {
-      // The request was made and the server responded with a status code
-      // that falls out of the range of 2xx
-      switch (error.response.status) {
-        case 401:
-          // Unauthorized - redirect to login
-          localStorage.removeItem('token')
-          window.location.href = '/login'
-          break
-        case 403:
-          console.error('Forbidden access')
-          break
-        case 404:
-          console.error('Resource not found')
-          break
-        case 500:
-          console.error('Internal server error')
-          break
-        default:
-          console.error('An error occurred:', error.response.data)
-      }
-    } else if (error.request) {
-      // The request was made but no response was received
-      console.error('No response received from server')
-    } else {
-      // Something happened in setting up the request that triggered an Error
-      console.error('Error:', error.message)
-    }
-    return Promise.reject(error)
-  }
-)
+    const errorMessage = getErrorMessage(error);
 
-export default apiClient
+    if (error.response) {
+      // Handle 401 - redirect to login
+      if (error.response.status === 401) {
+        localStorage.removeItem("token");
+        window.location.href = "/login";
+      }
+    }
+
+    return Promise.reject({ error, message: errorMessage });
+  }
+);
+
+export default apiClient;
+export { toast };

@@ -23,25 +23,43 @@
                   <v-avatar v-if="item.featured_image" size="60" rounded>
                     <v-img :src="item.featured_image"></v-img>
                   </v-avatar>
-                  <v-icon v-else size="60" color="grey-lighten-2">mdi-briefcase-outline</v-icon>
+                  <v-icon v-else size="60" color="grey-lighten-2"
+                    >mdi-briefcase-outline</v-icon
+                  >
                 </template>
 
                 <template v-slot:item.status="{ item }">
-                  <v-chip :color="item.status === 'published' ? 'success' : 'default'" size="small">
+                  <v-chip :color="getStatusColor(item.status)" size="small">
                     {{ item.status }}
                   </v-chip>
                 </template>
 
                 <template v-slot:item.is_featured="{ item }">
-                  <v-icon v-if="item.is_featured" color="warning">mdi-star</v-icon>
+                  <v-icon v-if="item.is_featured" color="warning"
+                    >mdi-star</v-icon
+                  >
                 </template>
 
                 <template v-slot:item.links="{ item }">
                   <div class="d-flex gap-2">
-                    <v-btn v-if="item.demo_url" :href="item.demo_url" target="_blank" icon size="x-small" variant="text">
+                    <v-btn
+                      v-if="item.demo_url"
+                      :href="item.demo_url"
+                      target="_blank"
+                      icon
+                      size="x-small"
+                      variant="text"
+                    >
                       <v-icon size="small">mdi-open-in-new</v-icon>
                     </v-btn>
-                    <v-btn v-if="item.repository_url" :href="item.repository_url" target="_blank" icon size="x-small" variant="text">
+                    <v-btn
+                      v-if="item.repository_url"
+                      :href="item.repository_url"
+                      target="_blank"
+                      icon
+                      size="x-small"
+                      variant="text"
+                    >
                       <v-icon size="small">mdi-github</v-icon>
                     </v-btn>
                   </div>
@@ -51,7 +69,12 @@
                   <v-btn icon size="small" @click="openDialog(item)">
                     <v-icon>mdi-pencil</v-icon>
                   </v-btn>
-                  <v-btn icon size="small" color="error" @click="confirmDelete(item)">
+                  <v-btn
+                    icon
+                    size="small"
+                    color="error"
+                    @click="confirmDelete(item)"
+                  >
                     <v-icon>mdi-delete</v-icon>
                   </v-btn>
                 </template>
@@ -64,13 +87,15 @@
       <!-- Create/Edit Dialog -->
       <v-dialog v-model="dialog" max-width="800" scrollable>
         <v-card>
-          <v-card-title>{{ editMode ? 'Edit Project' : 'Create New Project' }}</v-card-title>
+          <v-card-title>{{
+            editMode ? "Edit Project" : "Create New Project"
+          }}</v-card-title>
           <v-card-text>
             <v-form ref="formRef">
               <v-text-field
                 v-model="form.title"
                 label="Title"
-                :rules="[v => !!v || 'Title is required']"
+                :rules="[(v) => !!v || 'Title is required']"
                 required
               ></v-text-field>
 
@@ -78,7 +103,7 @@
                 v-model="form.slug"
                 label="Slug"
                 hint="Auto-generated from title"
-                :rules="[v => !!v || 'Slug is required']"
+                :rules="[(v) => !!v || 'Slug is required']"
                 required
               ></v-text-field>
 
@@ -114,7 +139,7 @@
 
               <v-select
                 v-model="form.status"
-                :items="['draft', 'published']"
+                :items="statusOptions"
                 label="Status"
               ></v-select>
 
@@ -128,7 +153,7 @@
             <v-spacer></v-spacer>
             <v-btn text @click="closeDialog">Cancel</v-btn>
             <v-btn color="primary" @click="saveProject">
-              {{ editMode ? 'Update' : 'Create' }}
+              {{ editMode ? "Update" : "Create" }}
             </v-btn>
           </v-card-actions>
         </v-card>
@@ -153,132 +178,151 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { projectsAPI } from '@/api'
-import DefaultLayout from '@/layouts/DefaultLayout.vue'
+import { ref, watch, onMounted } from "vue";
+import { projectsAPI } from "@/api";
+import DefaultLayout from "@/layouts/DefaultLayout.vue";
 
-const router = useRouter()
-const projects = ref([])
-const loading = ref(false)
-const dialog = ref(false)
-const deleteDialog = ref(false)
-const editMode = ref(false)
-const deletingProject = ref(null)
-const formRef = ref(null)
+const projects = ref([]);
+const loading = ref(false);
+const dialog = ref(false);
+const deleteDialog = ref(false);
+const editMode = ref(false);
+const deletingProject = ref(null);
+const formRef = ref(null);
 
 const headers = [
-  { title: 'Image', key: 'featured_image', sortable: false },
-  { title: 'Title', key: 'title' },
-  { title: 'Description', key: 'description', sortable: false },
-  { title: 'Status', key: 'status' },
-  { title: 'Featured', key: 'is_featured' },
-  { title: 'Links', key: 'links', sortable: false },
-  { title: 'Actions', key: 'actions', sortable: false },
-]
+  { title: "Image", key: "featured_image", sortable: false },
+  { title: "Title", key: "title" },
+  { title: "Description", key: "description", sortable: false },
+  { title: "Status", key: "status" },
+  { title: "Featured", key: "is_featured" },
+  { title: "Links", key: "links", sortable: false },
+  { title: "Actions", key: "actions", sortable: false },
+];
+
+const statusOptions = [
+  { title: "Planning", value: "planning" },
+  { title: "In Progress", value: "in-progress" },
+  { title: "Completed", value: "completed" },
+  { title: "Maintenance", value: "maintenance" },
+  { title: "Discontinued", value: "discontinued" },
+];
+
+const getStatusColor = (status) => {
+  const colors = {
+    planning: "info",
+    "in-progress": "warning",
+    completed: "success",
+    maintenance: "primary",
+    discontinued: "error",
+  };
+  return colors[status] || "default";
+};
 
 const form = ref({
-  title: '',
-  slug: '',
-  description: '',
-  content: '',
-  featured_image: '',
-  demo_url: '',
-  repository_url: '',
-  status: 'draft',
-  is_featured: false
-})
+  title: "",
+  slug: "",
+  description: "",
+  content: "",
+  featured_image: "",
+  demo_url: "",
+  repository_url: "",
+  status: "planning",
+  is_featured: false,
+});
 
-watch(() => form.value.title, (newTitle) => {
-  if (!editMode.value && newTitle) {
-    form.value.slug = newTitle
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/(^-|-$)/g, '')
+watch(
+  () => form.value.title,
+  (newTitle) => {
+    if (!editMode.value && newTitle) {
+      form.value.slug = newTitle
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/(^-|-$)/g, "");
+    }
   }
-})
+);
 
 const fetchProjects = async () => {
-  loading.value = true
+  loading.value = true;
   try {
-    const response = await projectsAPI.getAll()
-    projects.value = response.data.data || response.data
+    const response = await projectsAPI.getAll();
+    projects.value = response.data.data || response.data;
   } catch (error) {
-    console.error('Error fetching projects:', error)
+    // Error toast handled by axios interceptor
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 const openDialog = (project = null) => {
   if (project) {
-    editMode.value = true
-    form.value = { ...project }
+    editMode.value = true;
+    form.value = { ...project };
   } else {
-    editMode.value = false
+    editMode.value = false;
     form.value = {
-      title: '',
-      slug: '',
-      description: '',
-      content: '',
-      featured_image: '',
-      demo_url: '',
-      repository_url: '',
-      status: 'draft',
-      is_featured: false
-    }
+      title: "",
+      slug: "",
+      description: "",
+      content: "",
+      featured_image: "",
+      demo_url: "",
+      repository_url: "",
+      status: "planning",
+      is_featured: false,
+    };
   }
-  dialog.value = true
-}
+  dialog.value = true;
+};
 
 const closeDialog = () => {
-  dialog.value = false
-  editMode.value = false
+  dialog.value = false;
+  editMode.value = false;
   form.value = {
-    title: '',
-    slug: '',
-    description: '',
-    content: '',
-    featured_image: '',
-    demo_url: '',
-    repository_url: '',
-    status: 'draft',
-    is_featured: false
-  }
-}
+    title: "",
+    slug: "",
+    description: "",
+    content: "",
+    featured_image: "",
+    demo_url: "",
+    repository_url: "",
+    status: "planning",
+    is_featured: false,
+  };
+};
 
 const saveProject = async () => {
   try {
     if (editMode.value) {
-      await projectsAPI.update(form.value.id, form.value)
+      await projectsAPI.update(form.value.id, form.value);
     } else {
-      await projectsAPI.create(form.value)
+      await projectsAPI.create(form.value);
     }
-
-    await fetchProjects()
-    closeDialog()
+    await fetchProjects();
+    closeDialog();
   } catch (error) {
-    console.error('Error saving project:', error)
+    // Error toast handled by axios interceptor
   }
-}
+};
 
 const confirmDelete = (project) => {
-  deletingProject.value = project
-  deleteDialog.value = true
-}
+  deletingProject.value = project;
+  deleteDialog.value = true;
+};
 
 const deleteProject = async () => {
   try {
-    await projectsAPI.delete(deletingProject.value.id)
-    await fetchProjects()
-    deleteDialog.value = false
-    deletingProject.value = null
+    await projectsAPI.delete(deletingProject.value.id);
+    await fetchProjects();
+    deleteDialog.value = false;
+    deletingProject.value = null;
   } catch (error) {
-    console.error('Error deleting project:', error)
+    // Error toast handled by axios interceptor
   }
-}
+};
 
 onMounted(() => {
-  fetchProjects()
-})
+  fetchProjects();
+});
 </script>
